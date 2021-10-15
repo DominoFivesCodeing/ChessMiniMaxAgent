@@ -1,6 +1,6 @@
 import pygame as pygame
 from .constants import LIGHT_SQUARE_COLOR,DARK_SQUARE_COLOR,ROWS,COLS, SCREEN_WIDTH, SQUARE_SIZE,WHITE,BLACK
-from .piece import Piece, pawnPiece
+from .piece import bishopPiece, kingPiece, pawnPiece,knightPiece, queenPiece, rookPiece
 
 class Board:
     def __init__(self):
@@ -50,15 +50,15 @@ class Board:
         if row == 1 or row == 6:
             return pawnPiece(row,col,"Pawn",color)
         if col == 0 or col == 7:
-            return Piece(row,col,"Rook",color)
+            return rookPiece(row,col,"Rook",color)
         elif col == 1 or col == 6:
-            return Piece(row,col,"Knight",color)
+            return knightPiece(row,col,"Knight",color)
         elif col == 2 or col == 5:
-            return Piece(row,col,"Bishop",color)
+            return bishopPiece(row,col,"Bishop",color)
         elif col == 3:
-            return Piece(row,col,"Queen",color)
+            return queenPiece(row,col,"Queen",color)
         elif col == 4:
-            return Piece(row,col,"King",color)
+            return kingPiece(row,col,"King",color)
 
     def getPiece(self,row, col):
         return self.board[row][col]

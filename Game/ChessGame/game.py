@@ -1,6 +1,5 @@
 import pygame
 
-from ChessGame.piece import Piece
 from .board import Board
 from .constants import SQUARE_SIZE, WHITE,BLACK,DOT_COLOR
 
