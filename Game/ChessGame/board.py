@@ -6,8 +6,11 @@ class Board:
     def __init__(self):
         pygame.init()
         self.board = []
+        self.whiteKing = kingPiece(7,4,"King",WHITE)
+        self.blackKing = kingPiece(0,4,"King",BLACK)
         self.createBoard()
         self.textFont = pygame.font.SysFont(None, SCREEN_WIDTH//32)
+
         #Add inital pieces latter
 
     def drawBoard(self, window):
@@ -58,7 +61,8 @@ class Board:
         elif col == 3:
             return queenPiece(row,col,"Queen",color)
         elif col == 4:
-            return kingPiece(row,col,"King",color)
+            king = self.whiteKing if color == WHITE else self.blackKing
+            return king
 
     def getPiece(self,row, col):
         return self.board[row][col]
@@ -83,6 +87,51 @@ class Board:
                     counter = counter + 1
         print(counter)
 
+    def getChecksAndPins(self,color):
+        checks = []
+        pins = []
+        playerKing = self.whiteKing if color == WHITE else self.blackKing
+        searchDirections = ((-1,-1),(-1,0), (-1,1), (0,-1),(0,1), (1,-1), (1,0),(1,1))
+        knightDir = ((-1,-2),(-1,2),(1,-2),(1,2),(-2,-1),(-2,1),(2,-1),(2,1))
+        pinList = []
+        for dir in searchDirections:
+            row,col = dir
+            tempRow,tempCol = playerKing.row + row, playerKing.col + col
+            searchDir = True
+            currentPin = None
+            while(searchDir and 0 <= tempRow <= 7 and 0 <= tempCol <= 7):
+                currentSquare = self.board[tempRow][tempCol]
+                threats = ["Rook","Queen"] if (row == 0 or col == 0) else ["Bishop", "Queen", "Pawn"]
+                if currentSquare != 0:
+                    if currentSquare.color != color:
+                        if currentSquare.type in threats and not (currentSquare.type == "Pawn" and currentSquare.row != playerKing.row + playerKing.direction and abs(currentSquare.col - playerKing.col) != 1):
+                            if currentPin != None:
+                                pins.append(currentPin)
+                                currentPin = None
+                            else:
+                                checks.append(currentSquare)
+
+                    elif currentSquare.color == color:
+                        if currentPin != None:
+                            currentPin = None
+                            searchDir = False
+                        else:
+                            currentPin = currentSquare
+                            pinList.append(currentPin)
+                tempRow = tempRow + row
+                tempCol = tempCol + col
+
+        for dir in knightDir:
+            row,col = dir
+            newRow,newCol = playerKing.row + row,playerKing.col + col
+            if 0 <= newRow <= 7 and 0 <= newCol <= 7 and self.board[newRow][newCol] != 0:
+                piece = self.board[newRow][newCol]
+                if piece.color != color and piece.type == "Knight":
+                    checks.append(piece)
+        return checks,pins
+            
+
+    
     def __repr__(self) -> str:
         returnStr = ""
         for i in range(ROWS):
