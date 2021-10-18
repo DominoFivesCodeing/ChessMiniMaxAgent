@@ -13,9 +13,6 @@ class Game:
         self.board = Board()
         self.turn = WHITE
         self.validMoves = []
-        #self.inCheck
-        self.pins = []
-        self.checks = []
 
     def reset(self):
         self._init()
@@ -53,9 +50,7 @@ class Game:
             self.turn = BLACK
         else:
             self.turn = WHITE
-        self.checks,self.pins = self.board.getChecksAndPins(self.turn)
-        print("CHECKS: " + str(self.checks))
-        print("PINS: " + str(self.pins))
+        print(self.board.isCheckMateOrStaleMate(self.turn))
     
     def drawValidMoves(self, moves):
         for move in moves:

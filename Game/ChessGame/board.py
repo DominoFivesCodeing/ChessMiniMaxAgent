@@ -1,6 +1,7 @@
 import pygame as pygame
 from .constants import LIGHT_SQUARE_COLOR,DARK_SQUARE_COLOR,ROWS,COLS, SCREEN_WIDTH, SQUARE_SIZE,WHITE,BLACK
 from .piece import bishopPiece, kingPiece, pawnPiece,knightPiece, queenPiece, rookPiece
+import copy
 
 class Board:
     def __init__(self):
@@ -73,10 +74,51 @@ class Board:
             self.board[row][col] = 0
         self.board[piece.row][piece.col], self.board[row][col] = self.board[row][col], self.board[piece.row][piece.col]
         piece.movePiece(row,col)
-        print(self)
         self.pieceCount()
 
     def getValidMovesForPiece(self,piece):
+        checks,pins = self.getChecksAndPins(piece.color)
+        playerKing = self.whiteKing if piece.color == WHITE else self.blackKing
+        if len(checks) > 0:
+            if piece.type == "King":
+                return piece.getValidMoves(self)
+            if len(checks) == 1:
+                checkingPiece = checks[0]
+                pieceMoves = piece.getValidMoves(self)
+                if checkingPiece.type == "Knight":
+                    return [(checkingPiece.row, checkingPiece.col)] if ((checkingPiece.row, checkingPiece.col)) in pieceMoves else []
+                rowDIr = (checkingPiece.row - playerKing.row)//abs(checkingPiece.row - playerKing.row) if checkingPiece.row - playerKing.row != 0 else 0
+                colDir = (checkingPiece.col - playerKing.col)//abs(checkingPiece.col - playerKing.col) if checkingPiece.col - playerKing.col != 0 else 0
+                tempRow = playerKing.row + rowDIr
+                tempCol = playerKing.col + colDir
+                legalMoves = []
+                while(tempRow != checkingPiece.row or tempCol != checkingPiece.col):
+                    if (tempRow,tempCol) in pieceMoves:
+                        legalMoves.append((tempRow,tempCol))
+                    tempRow = tempRow + rowDIr
+                    tempCol = tempCol + colDir
+                if (checkingPiece.row, checkingPiece.col) in pieceMoves:
+                    legalMoves.append((checkingPiece.row, checkingPiece.col))
+                return legalMoves
+            return []
+
+        if piece in pins.keys():
+            pinningPiece = pins.get(piece)
+            pieceMoves = piece.getValidMoves(self)
+            rowDIr = (pinningPiece.row - piece.row)//abs(pinningPiece.row - piece.row) if pinningPiece.row - piece.row != 0 else 0
+            colDir = (pinningPiece.col - piece.col)//abs(pinningPiece.col - piece.col) if pinningPiece.col - piece.col != 0 else 0
+            tempRow = playerKing.row + rowDIr
+            tempCol = playerKing.col + colDir
+            legalMoves = []
+            while(tempRow != pinningPiece.row or tempCol != pinningPiece.col):
+                if (tempRow,tempCol) in pieceMoves:
+                    legalMoves.append((tempRow,tempCol))
+                tempRow = tempRow + rowDIr
+                tempCol = tempCol + colDir
+            if (pinningPiece.row, pinningPiece.col) in pieceMoves:
+                    legalMoves.append((pinningPiece.row, pinningPiece.col))
+            return legalMoves
+
         return piece.getValidMoves(self)
 
     def pieceCount(self):
@@ -89,11 +131,10 @@ class Board:
 
     def getChecksAndPins(self,color):
         checks = []
-        pins = []
+        pins = {}
         playerKing = self.whiteKing if color == WHITE else self.blackKing
         searchDirections = ((-1,-1),(-1,0), (-1,1), (0,-1),(0,1), (1,-1), (1,0),(1,1))
         knightDir = ((-1,-2),(-1,2),(1,-2),(1,2),(-2,-1),(-2,1),(2,-1),(2,1))
-        pinList = []
         for dir in searchDirections:
             row,col = dir
             tempRow,tempCol = playerKing.row + row, playerKing.col + col
@@ -106,10 +147,11 @@ class Board:
                     if currentSquare.color != color:
                         if currentSquare.type in threats and not (currentSquare.type == "Pawn" and currentSquare.row != playerKing.row + playerKing.direction and abs(currentSquare.col - playerKing.col) != 1):
                             if currentPin != None:
-                                pins.append(currentPin)
+                                pins[currentPin] = currentSquare
                                 currentPin = None
                             else:
                                 checks.append(currentSquare)
+                        searchDir = False
 
                     elif currentSquare.color == color:
                         if currentPin != None:
@@ -117,7 +159,6 @@ class Board:
                             searchDir = False
                         else:
                             currentPin = currentSquare
-                            pinList.append(currentPin)
                 tempRow = tempRow + row
                 tempCol = tempCol + col
 
@@ -129,6 +170,20 @@ class Board:
                 if piece.color != color and piece.type == "Knight":
                     checks.append(piece)
         return checks,pins
+
+    def isCheckMateOrStaleMate(self,color):
+        checks = self.getChecksAndPins(color)[0]
+        for row in self.board:
+            for square in row:
+                if square != 0 and square.color == color and len(self.getValidMovesForPiece(square)) > 0:
+                    return None
+        if len(checks) > 0:
+            return "Checkmate"
+        return "Stalemate"
+                    
+
+                    
+
             
 
     

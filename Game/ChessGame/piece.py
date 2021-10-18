@@ -1,3 +1,4 @@
+import copy
 from .constants import SQUARE_SIZE,WHITE_PIECE_IMAGES,BLACK_PIECE_IMAGES,WHITE,BLACK,ROWS,COLS
 
 class _Piece:
@@ -125,12 +126,25 @@ class kingPiece(_Piece):
         super().__init__(row, col, type, color)
 
     def getValidMoves(self, board):
-        movesList = []
+        moveList = []
         for i in range(-1,2):
             for n in range(-1,2):
                 if not (i == n and i == 0):
                     newRow = self.row + i
                     newCol = self.col + n
                     if self.moveIsInbounds(newRow,newCol) and (board.getPiece(newRow,newCol) == 0 or board.getPiece(newRow,newCol).color != self.color):
-                        movesList.append((newRow,newCol))
-        return movesList
+                        oldRow = copy.deepcopy(self.row)
+                        oldCol = copy.deepcopy(self.col)
+                        oldDestination = board.getPiece(newRow,newCol)
+                        if oldDestination != 0 and oldDestination.color != self.color:
+                            board.board[newRow][newCol] = 0
+                        board.board[self.row][self.col], board.board[newRow][newCol] = board.board[newRow][newCol], board.board[self.row][self.col]
+                        self.row = newRow
+                        self.col = newCol
+                        if len(board.getChecksAndPins(self.color)[0]) == 0:
+                            moveList.append((newRow,newCol))
+                        board.board[oldRow][oldCol], board.board[newRow][newCol] = self, oldDestination
+                        self.row = oldRow
+                        self.col = oldCol
+                        self.calc_pos()
+        return moveList
