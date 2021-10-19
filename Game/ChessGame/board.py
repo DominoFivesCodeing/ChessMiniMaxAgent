@@ -142,7 +142,7 @@ class Board:
             for n in range(COLS):
                 if self.board[i][n] != 0:
                     counter = counter + 1
-        print(counter)
+        #print(counter)
 
     def getChecksAndPins(self,color):
         checks = []

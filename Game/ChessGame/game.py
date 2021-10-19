@@ -30,7 +30,6 @@ class Game:
                 self.validMoves = []
                 self.selected = None
                 self.selectPiece(row,col)
-
         selectedPiece = self.board.getPiece(row,col)
         if selectedPiece != 0 and selectedPiece.color == self.turn:
             self.selected = selectedPiece
@@ -40,7 +39,7 @@ class Game:
     def _move(self,row,col):
         if self.selected and (row,col) in self.validMoves:
             self.board.movePiece(self.selected,row,col)
-            if self.selected.type == "Pawn" and row == 0 or row == 7:
+            if self.selected != 0 and self.selected.type == "Pawn" and (row == 0 or row == 7):
                 pygame.event.post(pygame.event.Event(pygame.USEREVENT, {'turn': self.turn}))
             self.changeTurn()
         else:
@@ -53,7 +52,7 @@ class Game:
             self.turn = BLACK
         else:
             self.turn = WHITE
-        print(self.board.isCheckMateOrStaleMate(self.turn))
+        #print(self.board.isCheckMateOrStaleMate(self.turn))
 
     def promotePawn(self, promotionType):
         self.board.pawnPromotion(self.selected, promotionType)
