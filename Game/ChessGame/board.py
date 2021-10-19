@@ -70,11 +70,23 @@ class Board:
 
     def movePiece(self,piece,row,col):
         destination = self.getPiece(row,col)
+        if piece.type == "King":
+            pass
+        elif piece.type == "Pawn" and self.isPawnMoveEnPassant(piece,row,col):
+            print()
+            self.board[row-piece.direction][col] = 0
         if destination != 0 and destination.color != piece.color:
             self.board[row][col] = 0
         self.board[piece.row][piece.col], self.board[row][col] = self.board[row][col], self.board[piece.row][piece.col]
         piece.movePiece(row,col)
         self.pieceCount()
+
+    def isPawnMoveEnPassant(self,piece,row,col):
+        isPieceMoveCorrect = piece.row + piece.direction == row and abs(piece.col - col) == 1
+        takenPawnSquare = self.board[row-piece.direction][col]
+        isTakenPawnValid = takenPawnSquare != 0 and takenPawnSquare.type == "Pawn" and takenPawnSquare.color != piece.color and takenPawnSquare.isEnPassantVulnerable
+        print(isPieceMoveCorrect,isTakenPawnValid)
+        return isPieceMoveCorrect and isTakenPawnValid
 
     def getValidMovesForPiece(self,piece):
         checks,pins = self.getChecksAndPins(piece.color)

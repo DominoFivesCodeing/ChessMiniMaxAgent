@@ -51,14 +51,21 @@ class pawnPiece(_Piece):
     def __init__(self, row, col, type, color):
         super().__init__(row, col, type, color)
         self.firstTurn = True
+        self.isEnPassantVulnerable = False
 
     def movePiece(self, row, col):
+        if self.firstTurn and row == self.row+2*self.direction:
+            self.isEnPassantVulnerable = True
+        else:
+            self.isEnPassantVulnerable = False
         self.firstTurn = False
+        print(self.isEnPassantVulnerable)
         return super().movePiece(row, col)
 
     def getValidMoves(self,board):
         moveList = []
-        squaresToCheck = [(self.row + self.direction, self.col),(self.row + 2*self.direction, self.col),(self.row + self.direction, self.col + 1 ), (self.row + self.direction, self.col - 1 )]
+        squaresToCheck = [(self.row + self.direction, self.col),(self.row + 2*self.direction, self.col),(self.row + self.direction, self.col + 1 ), (self.row + self.direction, self.col - 1 ), \
+                           (self.row, self.col - 1), (self.row, self.col + 1)]
         for checkSquareForMoveRow,checkSquareForMoveCol  in squaresToCheck:
             if self.moveIsInbounds(checkSquareForMoveRow, checkSquareForMoveCol):
                 square = board.getPiece(checkSquareForMoveRow, checkSquareForMoveCol)
@@ -66,11 +73,16 @@ class pawnPiece(_Piece):
                 colDistance = abs(checkSquareForMoveCol-self.col)
                 if rowDistance == 2 and colDistance == 0 and self.firstTurn and square == 0 and board.getPiece(checkSquareForMoveRow-self.direction, checkSquareForMoveCol) == 0:
                     moveList.append((checkSquareForMoveRow,checkSquareForMoveCol))
-                if rowDistance == 1:
+                elif rowDistance == 1:
                     if colDistance == 0 and square == 0:
                         moveList.append((checkSquareForMoveRow,checkSquareForMoveCol))
                     elif colDistance == 1 and square != 0 and square.color != self.color:
                         moveList.append((checkSquareForMoveRow,checkSquareForMoveCol))
+                elif rowDistance == 0:
+                    square = board.getPiece(checkSquareForMoveRow,checkSquareForMoveCol)
+                    square2 = board.getPiece(checkSquareForMoveRow + self.direction,checkSquareForMoveCol)
+                    if square != 0 and square.type == "Pawn" and square.color != self.color and square.isEnPassantVulnerable and square2 == 0:
+                        moveList.append((square.row + self.direction, square.col))
         return moveList
 
 class knightPiece(_Piece):
