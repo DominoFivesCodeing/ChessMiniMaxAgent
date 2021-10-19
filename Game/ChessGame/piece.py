@@ -59,7 +59,6 @@ class pawnPiece(_Piece):
         else:
             self.isEnPassantVulnerable = False
         self.firstTurn = False
-        print(self.isEnPassantVulnerable)
         return super().movePiece(row, col)
 
     def getValidMoves(self,board):
@@ -111,6 +110,7 @@ class queenPiece(_Piece):
 
 class rookPiece(_Piece):
     def __init__(self, row, col, type, color):
+        self.hasMoved = False
         super().__init__(row, col, type, color)
     
     def getValidMoves(self, board):
@@ -120,6 +120,9 @@ class rookPiece(_Piece):
                 if i == 0 or n == 0 and i != n:
                     moveList = moveList + self.getMovesIndirection(i,n,board)
         return moveList
+    def movePiece(self, row, col):
+        self.hasMoved = True
+        return super().movePiece(row, col)
 
 class bishopPiece(_Piece):
     def __init__(self, row, col, type, color):
@@ -135,7 +138,12 @@ class bishopPiece(_Piece):
 
 class kingPiece(_Piece):
     def __init__(self, row, col, type, color):
+        self.hasMoved = False
         super().__init__(row, col, type, color)
+
+    def movePiece(self, row, col):
+        self.hasMoved = True
+        return super().movePiece(row, col)
 
     def getValidMoves(self, board):
         moveList = []
@@ -145,18 +153,46 @@ class kingPiece(_Piece):
                     newRow = self.row + i
                     newCol = self.col + n
                     if self.moveIsInbounds(newRow,newCol) and (board.getPiece(newRow,newCol) == 0 or board.getPiece(newRow,newCol).color != self.color):
-                        oldRow = copy.deepcopy(self.row)
-                        oldCol = copy.deepcopy(self.col)
-                        oldDestination = board.getPiece(newRow,newCol)
-                        if oldDestination != 0 and oldDestination.color != self.color:
-                            board.board[newRow][newCol] = 0
-                        board.board[self.row][self.col], board.board[newRow][newCol] = board.board[newRow][newCol], board.board[self.row][self.col]
-                        self.row = newRow
-                        self.col = newCol
-                        if len(board.getChecksAndPins(self.color)[0]) == 0:
+                        if self.isKingSafeAtSquare(newRow,newCol,board):
                             moveList.append((newRow,newCol))
-                        board.board[oldRow][oldCol], board.board[newRow][newCol] = self, oldDestination
-                        self.row = oldRow
-                        self.col = oldCol
-                        self.calc_pos()
+
+        if not self.hasMoved:
+            moveList = moveList + self.getValidCastling(board)
+
         return moveList
+
+    def isKingSafeAtSquare(self,row,col,board):
+        isSafe = False
+        oldRow = copy.deepcopy(self.row)
+        oldCol = copy.deepcopy(self.col)
+        oldDestination = board.getPiece(row,col)
+        if oldDestination != 0 and oldDestination.color != self.color:
+            board.board[row][col] = 0
+        board.board[self.row][self.col], board.board[row][col] = board.board[row][col], board.board[self.row][self.col]
+        self.row = row
+        self.col = col
+        if len(board.getChecksAndPins(self.color)[0]) == 0:
+            isSafe = True
+        board.board[oldRow][oldCol], board.board[row][col] = self, oldDestination
+        self.row = oldRow
+        self.col = oldCol
+        self.calc_pos()
+        return isSafe
+
+    def getValidCastling(self,board):
+        validCastlingMoves = []
+        directions = [-1,1]
+        for dir in directions:
+            currentCol = self.col + dir
+            validateDir = True
+            while(validateDir):
+                if currentCol == 0 or currentCol == 7:
+                    rookSquare = board.getPiece(self.row, currentCol)
+                    if rookSquare != 0 and rookSquare.type == "Rook" and rookSquare.color == self.color and not rookSquare.hasMoved:
+                        castlingCol = 2 if currentCol == 0 else 6
+                        validCastlingMoves.append((self.row,castlingCol))
+                        validateDir = False
+                if board.getPiece(self.row,currentCol) != 0 or not self.isKingSafeAtSquare(self.row,currentCol,board):
+                    validateDir = False
+                currentCol = currentCol + dir
+        return validCastlingMoves

@@ -70,10 +70,12 @@ class Board:
 
     def movePiece(self,piece,row,col):
         destination = self.getPiece(row,col)
-        if piece.type == "King":
-            pass
+        if piece.type == "King" and self.isKingMoveCastling(piece,row,col):
+            rookCol = 0 if col == 2 else 7
+            rookSide = 1 if col == 2 else -1
+            self.board[row][rookCol], self.board[row][col+rookSide] = self.board[row][col+rookSide], self.board[row][rookCol]
+            self.board[row][col+rookSide].movePiece(row,col+rookSide)
         elif piece.type == "Pawn" and self.isPawnMoveEnPassant(piece,row,col):
-            print()
             self.board[row-piece.direction][col] = 0
         if destination != 0 and destination.color != piece.color:
             self.board[row][col] = 0
@@ -85,8 +87,10 @@ class Board:
         isPieceMoveCorrect = piece.row + piece.direction == row and abs(piece.col - col) == 1
         takenPawnSquare = self.board[row-piece.direction][col]
         isTakenPawnValid = takenPawnSquare != 0 and takenPawnSquare.type == "Pawn" and takenPawnSquare.color != piece.color and takenPawnSquare.isEnPassantVulnerable
-        print(isPieceMoveCorrect,isTakenPawnValid)
         return isPieceMoveCorrect and isTakenPawnValid
+
+    def isKingMoveCastling(self,piece,row,col):
+        return piece.row == row and (col == 2 or col == 6) and not piece.hasMoved
 
     def getValidMovesForPiece(self,piece):
         checks,pins = self.getChecksAndPins(piece.color)
