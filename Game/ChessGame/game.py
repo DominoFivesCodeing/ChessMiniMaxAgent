@@ -1,7 +1,8 @@
 import pygame
 
 from .board import Board
-from .constants import SQUARE_SIZE, WHITE,BLACK,DOT_COLOR
+from .constants import SQUARE_SIZE, WHITE,BLACK,DOT_COLOR,FONT
+
 
 class Game:
     def __init__(self,window):
@@ -39,6 +40,8 @@ class Game:
     def _move(self,row,col):
         if self.selected and (row,col) in self.validMoves:
             self.board.movePiece(self.selected,row,col)
+            if self.selected.type == "Pawn" and row == 0 or row == 7:
+                pygame.event.post(pygame.event.Event(pygame.USEREVENT, {'turn': self.turn}))
             self.changeTurn()
         else:
             return False
@@ -51,6 +54,9 @@ class Game:
         else:
             self.turn = WHITE
         print(self.board.isCheckMateOrStaleMate(self.turn))
+
+    def promotePawn(self, promotionType):
+        self.board.pawnPromotion(self.selected, promotionType)
     
     def drawValidMoves(self, moves):
         for move in moves:

@@ -11,6 +11,8 @@ LIGHT_SQUARE_COLOR = (241, 217, 181)
 DARK_SQUARE_COLOR = (181, 135, 99)
 DOT_COLOR = (255,255,255)
 WHITE,BLACK = "WHITE", "BLACK"
+pygame.init()
+FONT = pygame.font.SysFont(None, SCREEN_WIDTH//32)
 
 
 WHITE_PIECE_IMAGES = {"King": pygame.transform.scale(pygame.image.load(IMAGE_FOLDER_PATH / "w_king.png"), (SPRITE_SIZE,SPRITE_SIZE)), 

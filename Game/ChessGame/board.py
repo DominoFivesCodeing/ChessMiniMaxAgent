@@ -1,16 +1,15 @@
 import pygame as pygame
-from .constants import LIGHT_SQUARE_COLOR,DARK_SQUARE_COLOR,ROWS,COLS, SCREEN_WIDTH, SQUARE_SIZE,WHITE,BLACK
+from .constants import FONT, LIGHT_SQUARE_COLOR,DARK_SQUARE_COLOR,ROWS,COLS, SCREEN_WIDTH, SQUARE_SIZE,WHITE,BLACK
 from .piece import bishopPiece, kingPiece, pawnPiece,knightPiece, queenPiece, rookPiece
 import copy
 
 class Board:
     def __init__(self):
-        pygame.init()
         self.board = []
         self.whiteKing = kingPiece(7,4,"King",WHITE)
         self.blackKing = kingPiece(0,4,"King",BLACK)
         self.createBoard()
-        self.textFont = pygame.font.SysFont(None, SCREEN_WIDTH//32)
+        self.textFont = FONT
 
         #Add inital pieces latter
 
@@ -197,7 +196,21 @@ class Board:
             return "Checkmate"
         return "Stalemate"
                     
+    def pawnPromotion(self,piece,promotionType):
+        newPiece = None
+        if promotionType == "Queen":
+            newPiece = queenPiece(piece.row,piece.col,promotionType,piece.color)
+        elif promotionType == "Rook":
+            newPiece = rookPiece(piece.row,piece.col,promotionType, piece.color)
+        elif promotionType == "Bishop":
+            newPiece = bishopPiece(piece.row,piece.col,promotionType,piece.color)
+        elif promotionType == "Knight":
+            newPiece = knightPiece(piece.row,piece.col,promotionType,piece.color)
+        else:
+            newPiece = queenPiece(piece.row,piece.col,promotionType,piece.color)
 
+        self.board[piece.row][piece.col] = newPiece
+        del piece
                     
 
             
