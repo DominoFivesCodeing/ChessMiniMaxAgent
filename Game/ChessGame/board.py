@@ -1,26 +1,26 @@
 import pygame as pygame
-from .constants import FONT, LIGHT_SQUARE_COLOR,DARK_SQUARE_COLOR,ROWS,COLS, SCREEN_WIDTH, SQUARE_SIZE,WHITE,BLACK
+from .constants import BOARD_DIRECTIONS, FONT, LIGHT_SQUARE_COLOR,DARK_SQUARE_COLOR,ROWS,COLS, SCREEN_WIDTH, SQUARE_SIZE,WHITE,BLACK
 from .piece import bishopPiece, kingPiece, pawnPiece,knightPiece, queenPiece, rookPiece
 import copy
 
+"""The class for the chess board, holds all methods used to manipulate and draw the board"""
 class Board:
     def __init__(self):
         self.board = []
         self.whiteKing = kingPiece(7,4,"King",WHITE)
         self.blackKing = kingPiece(0,4,"King",BLACK)
-        self.createBoard()
-        self.textFont = FONT
+        self.createInitialBoard()
 
-        #Add inital pieces latter
-
+    """draws the board object using functionality from pygame"""
     def drawBoard(self, window):
         window.fill(LIGHT_SQUARE_COLOR)
         for row in range(ROWS):
             for col in range(row % 2, ROWS, 2):
                 pygame.draw.rect(window, DARK_SQUARE_COLOR,(row * SQUARE_SIZE, col * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
         self.drawPieces(window)
-        self.drawText(window,self.textFont)
+        self.drawText(window,FONT)
 
+    """Helper function for drawBoard that draws all the pieces onto the board"""
     def drawPieces(self,window):
         for row in range(ROWS):
             for col in range(COLS):
@@ -28,6 +28,7 @@ class Board:
                 if piece != 0:
                     piece.draw(window)
         
+    """Helper function for drawBoard that draws the letters and numbers used in chess to denote all squares"""
     def drawText(self,window,font):
         for row in range(ROWS):
             color = LIGHT_SQUARE_COLOR if row % 2 == 0 else DARK_SQUARE_COLOR
@@ -35,10 +36,12 @@ class Board:
             window.blit(text, (0,row*SQUARE_SIZE))
         for col in range(COLS):
             color = DARK_SQUARE_COLOR if col % 2 == 0 else LIGHT_SQUARE_COLOR
+            #chr(65) is the ASCII value for "A"
             text = font.render(chr(65+col), True, color)
             window.blit(text, (col*SQUARE_SIZE+SQUARE_SIZE*0.85,SCREEN_WIDTH*(COLS-1)//COLS + SQUARE_SIZE*0.85))
 
-    def createBoard(self):
+    """Function for filling the self.board variable and placeing the pieces on their correct positions at the start of the game"""
+    def createInitialBoard(self):
         for row in range(ROWS):
             self.board.append([])
             for col in range(COLS):
@@ -49,6 +52,7 @@ class Board:
                 else:
                     self.board[row].append(0)
 
+    """Helper function for createInitialBoard that return the appropriate piece object"""
     def getInitialPieceType(self, row, col,color):
         if row == 1 or row == 6:
             return pawnPiece(row,col,"Pawn",color)
@@ -64,9 +68,21 @@ class Board:
             king = self.whiteKing if color == WHITE else self.blackKing
             return king
 
+    """returns the object at board[row][col]"""
     def getPiece(self,row, col):
         return self.board[row][col]
 
+    """Takes in "color" that is either WHITE or BLACK and returns a list of all pieces that has the desired color."""
+    def getAllPiecesOfColor(self,color):
+        pieceList = []
+        for row in self.board:
+            for col in row:
+                if col != 0 and col.color == color:
+                    pieceList.append(col)
+        return pieceList
+
+    """Takes in a piece object, two ints for the row and col that
+       the piece should be moved to"""
     def movePiece(self,piece,row,col):
         destination = self.getPiece(row,col)
         if piece.type == "King" and self.isKingMoveCastling(piece,row,col):
@@ -80,17 +96,19 @@ class Board:
             self.board[row][col] = 0
         self.board[piece.row][piece.col], self.board[row][col] = self.board[row][col], self.board[piece.row][piece.col]
         piece.movePiece(row,col)
-        self.pieceCount()
 
+    """Helper function for movePiece that returns wather or not a pawn move is en passant"""
     def isPawnMoveEnPassant(self,piece,row,col):
         isPieceMoveCorrect = piece.row + piece.direction == row and abs(piece.col - col) == 1
         takenPawnSquare = self.board[row-piece.direction][col]
         isTakenPawnValid = takenPawnSquare != 0 and takenPawnSquare.type == "Pawn" and takenPawnSquare.color != piece.color and takenPawnSquare.isEnPassantVulnerable
         return isPieceMoveCorrect and isTakenPawnValid
 
+    """Helper function for movePiece that returns wather or not a king move is castling"""
     def isKingMoveCastling(self,piece,row,col):
         return piece.row == row and (col == 2 or col == 6) and not piece.hasMoved
 
+    """Takes in a piece and returns a list containing all valid moves for it"""
     def getValidMovesForPiece(self,piece):
         checks,pins = self.getChecksAndPins(piece.color)
         playerKing = self.whiteKing if piece.color == WHITE else self.blackKing
@@ -136,25 +154,18 @@ class Board:
 
         return piece.getValidMoves(self)
 
-    def pieceCount(self):
-        counter = 0
-        for i in range(ROWS):
-            for n in range(COLS):
-                if self.board[i][n] != 0:
-                    counter = counter + 1
-        #print(counter)
-
+    """Returns two lists, one containing all pieces that checks color's king and one of containing color's pins. Takes in "color" that is either WHITE or BLACK
+    pins are peices that protect the king from an attack and moveing them would result in the king being attacked (unless the pin takes the attacking piece)"""
     def getChecksAndPins(self,color):
         checks = []
         pins = {}
         playerKing = self.whiteKing if color == WHITE else self.blackKing
-        searchDirections = ((-1,-1),(-1,0), (-1,1), (0,-1),(0,1), (1,-1), (1,0),(1,1))
-        knightDir = ((-1,-2),(-1,2),(1,-2),(1,2),(-2,-1),(-2,1),(2,-1),(2,1))
-        for dir in searchDirections:
+        for dir in BOARD_DIRECTIONS:
             row,col = dir
             tempRow,tempCol = playerKing.row + row, playerKing.col + col
             searchDir = True
             currentPin = None
+            #Check in all directions for pins and checks
             while(searchDir and 0 <= tempRow <= 7 and 0 <= tempCol <= 7):
                 currentSquare = self.board[tempRow][tempCol]
                 threats = ["Rook","Queen"] if (row == 0 or col == 0) else ["Bishop", "Queen", "Pawn"]
@@ -176,8 +187,9 @@ class Board:
                             currentPin = currentSquare
                 tempRow = tempRow + row
                 tempCol = tempCol + col
-
-        for dir in knightDir:
+        #Since knights can jump over pieces they cannot be pinned and require their own logic to find
+        knightPos = ((-1,-2),(-1,2),(1,-2),(1,2),(-2,-1),(-2,1),(2,-1),(2,1))
+        for dir in knightPos:
             row,col = dir
             newRow,newCol = playerKing.row + row,playerKing.col + col
             if 0 <= newRow <= 7 and 0 <= newCol <= 7 and self.board[newRow][newCol] != 0:
@@ -186,17 +198,24 @@ class Board:
                     checks.append(piece)
         return checks,pins
 
-    def isCheckMateOrStaleMate(self,color):
+    """Takes in "color" that is either WHITE or BLACK and returns the current "ending state" of the game.
+            if the game should not end than 0 will be returned
+            if the game should end now in a checkmate, 1 will be returned
+            if the game should end not in a stalemate, 2 will be returned"""
+    def getGameStatus(self,color):
         checks = self.getChecksAndPins(color)[0]
-        for row in self.board:
-            for square in row:
-                if square != 0 and square.color == color and len(self.getValidMovesForPiece(square)) > 0:
-                    return None
+        playersPieces = self.getAllPiecesOfColor(color)
+        for piece in playersPieces:
+            if piece.color == color and len(self.getValidMovesForPiece(piece)) > 0:
+                return 0
         if len(checks) > 0:
-            return "Checkmate"
-        return "Stalemate"
+            return 1
+        return 2
                     
+    """Takes in a piece object that is supposed to be a pawn and a string of what piece 
+       the pawn will be promoted to. Replaces the pawn with the desired promotionType."""
     def pawnPromotion(self,piece,promotionType):
+        assert piece.type == "Pawn" and (piece.row == 0 or piece.row == 7)
         newPiece = None
         if promotionType == "Queen":
             newPiece = queenPiece(piece.row,piece.col,promotionType,piece.color)
@@ -211,16 +230,55 @@ class Board:
 
         self.board[piece.row][piece.col] = newPiece
         del piece
-                    
-
-            
-
     
+    """Custom __repr__ that returns a string showing where all pieces are on the board"""
     def __repr__(self) -> str:
-        returnStr = ""
-        for i in range(ROWS):
-            for n in range(1,COLS+1):
-                returnStr = returnStr + str(self.board[i][n-1]) + " "
-                if n % 8 == 0:
-                    returnStr = returnStr + "\n"
+        returnStr = "\n"
+        for row in self.board:
+            for col in row:
+                if col == 0:
+                    returnStr = returnStr + "Empty     "
+                else:
+                    pieceColor = "W." if col.color == WHITE else "B."
+                    newStringPortion = pieceColor + col.type + " "
+                    while len(newStringPortion) <= 9:
+                        newStringPortion = newStringPortion + " " 
+                    returnStr = returnStr + newStringPortion
+
+            returnStr = returnStr + "\n"
         return returnStr
+
+    """Evaluation function used by the AI"""
+    def evaluteBoard(self):
+        if self.getGameStatus(WHITE) == 1:
+            return -1000
+        if self.getGameStatus(BLACK) == 1:
+            return 10000
+
+        whitePieces = self.getAllPiecesOfColor(WHITE)
+        blackPieces = self.getAllPiecesOfColor(BLACK)
+        whiteTotalValue = 0
+        blackTotalValue = 0
+        for i in whitePieces:
+            if i.type == "Pawn":
+                whiteTotalValue = whiteTotalValue + 1
+            elif i.type == "Knight":
+                whiteTotalValue = whiteTotalValue + 3
+            elif i.type == "Bishop":
+                whiteTotalValue = whiteTotalValue + 3
+            elif i.type == "Rook":
+                whiteTotalValue = whiteTotalValue + 5
+            elif i.type == "Queen":
+                whiteTotalValue = whiteTotalValue + 9
+        for i in blackPieces:
+            if i.type == "Pawn":
+                blackTotalValue = blackTotalValue + 1
+            elif i.type == "Knight":
+                blackTotalValue = blackTotalValue + 3
+            elif i.type == "Bishop":
+                blackTotalValue = blackTotalValue + 3
+            elif i.type == "Rook":
+                blackTotalValue = blackTotalValue + 5
+            elif i.type == "Queen":
+                blackTotalValue = blackTotalValue + 9
+        return whiteTotalValue - blackTotalValue

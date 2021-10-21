@@ -1,25 +1,35 @@
 import pygame as pygame
-from pygame import display
-from ChessGame.constants import LIGHT_SQUARE_COLOR, SCREEN_WIDTH,SCREEN_HEIGHT, SQUARE_SIZE, FONT,WHITE, WHITE_PIECE_IMAGES,BLACK_PIECE_IMAGES
-from ChessGame.board import Board
+from ChessGame.constants import BLACK, SCREEN_WIDTH,SCREEN_HEIGHT, SQUARE_SIZE, FONT,WHITE, WHITE_PIECE_IMAGES,BLACK_PIECE_IMAGES
 from ChessGame.game import Game
+from ChessGame.AI.minimax import minimax
+import time
 
 WINDOW = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
 pygame.display.set_caption("Chess Agent")
 FPS = 60
 
+"""Converts the cordinates of the mouse to row and col values used in the game"""
 def getRowColOfMouse(pos):
     x,y = pos
     row, col = (y//SQUARE_SIZE, x//SQUARE_SIZE)
     return row,col
 
+"""Main game loop"""
 def gameLoop():
     running = True
     gameInstance = Game(WINDOW)
-    print(gameInstance.board)
+    playerColor = WHITE
+    AiColor = BLACK
+    clock = pygame.time.Clock()
     
-    while running == True:
-        clock = pygame.time.Clock()
+    while running:
+        clock.tick(FPS)
+        if gameInstance.turn == AiColor:
+            startTime = time.time()
+            value,newBoard = minimax(gameInstance.getBoard(), 4,False)
+            print("--- %s seconds ---" % (time.time() - startTime))
+            gameInstance.moveAI(newBoard)
+            pass
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -30,12 +40,12 @@ def gameLoop():
 
             if event.type == pygame.USEREVENT:
                 promotionType = promotionMenu(event.turn)
-                print(promotionType)
                 gameInstance.promotePawn(promotionType)
-
         gameInstance.update()
     
     pygame.quit()
+
+"""Creates a menu for choosing what piece to promote to when a promotion event is received"""
 def promotionMenu(turn):
     images = WHITE_PIECE_IMAGES if turn == WHITE else BLACK_PIECE_IMAGES
     menuWidth,menuHeight = (SCREEN_WIDTH//2, SCREEN_HEIGHT//2)
@@ -62,22 +72,17 @@ def promotionMenu(turn):
     WINDOW.blit(menuSurface,menuRect)
     pygame.display.update()
     while True:
+        menuRelativPos = SCREEN_WIDTH//4
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 x,y = pygame.mouse.get_pos()
-                print(x,y)
-                print(menuWidth, optionSize*4)
-                if 200 <= x <= 200+menuWidth and 0 <= y <= 200+optionSize*1:
-                    print("Queen")
+                if menuRelativPos <= x <= menuRelativPos+menuWidth and 0 <= y <= menuRelativPos+optionSize*1:
                     return "Queen"
-                if 200 <= x <= 200+menuWidth and 200+optionSize*1 < y <= 200+optionSize*2:
-                    print("Rook")
+                if menuRelativPos <= x <= menuRelativPos+menuWidth and menuRelativPos+optionSize*1 < y <= menuRelativPos+optionSize*2:
                     return "Rook"
-                if 200 <= x <= 200+menuWidth and 200+optionSize*2 <= y <= 200+optionSize*3:
-                    print("Bishop")
+                if menuRelativPos <= x <= menuRelativPos+menuWidth and menuRelativPos+optionSize*2 <= y <= menuRelativPos+optionSize*3:
                     return "Bishop"
-                if 200 <= x <= 200+menuWidth and 200+optionSize*3 <= y <= 200+optionSize*4:
-                    print("Knight")
+                if menuRelativPos <= x <= menuRelativPos+menuWidth and menuRelativPos+optionSize*3 <= y <= menuRelativPos+optionSize*4:
                     return "Knight"
                 
 if __name__ == "__main__":
