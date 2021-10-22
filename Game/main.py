@@ -26,7 +26,7 @@ def gameLoop():
         clock.tick(FPS)
         if gameInstance.turn == AiColor:
             startTime = time.time()
-            value,newBoard = minimax(gameInstance.getBoard(), 4,False)
+            value,newBoard = minimax(gameInstance.getBoard(), 3,False)
             print("--- %s seconds ---" % (time.time() - startTime))
             gameInstance.moveAI(newBoard)
             pass

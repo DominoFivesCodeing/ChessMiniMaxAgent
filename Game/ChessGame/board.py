@@ -10,6 +10,9 @@ class Board:
         self.whiteKing = kingPiece(7,4,"King",WHITE)
         self.blackKing = kingPiece(0,4,"King",BLACK)
         self.createInitialBoard()
+        self.pins = set()
+        self.attackedSquares = set()
+        self.occupiedSquares = set()
 
     """draws the board object using functionality from pygame"""
     def drawBoard(self, window):
